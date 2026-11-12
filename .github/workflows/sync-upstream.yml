@@ -1,0 +1,35 @@
+name: Sync upstream
+
+# GitHub fork 默认不会自动同步上游，自己拉一次才行。
+# 这个工作流每天定时把老王上游的更新合进来，有冲突时以上游为准。
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Merge upstream
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote add upstream https://github.com/eooce/Auto-Renew-Bothosting.git
+          git fetch upstream main
+          if git merge upstream/main --no-edit -X theirs; then
+            git push origin main
+            echo "Synced with upstream"
+          else
+            git merge --abort
+            echo "Merge failed, skipped this round"
+            exit 1
+          fi
