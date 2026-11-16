@@ -492,16 +492,36 @@ def main():
 
             # 点击续期按钮
             print("⏳ 等待续期按钮可用并点击...")
-            time.sleep(5) 
+            time.sleep(5)
+
+            # 调试：打出弹窗里所有按钮的文本/禁用状态，看看到底点了哪个
+            try:
+                dialog_html = sb.get_text('div[role="dialog"]') if sb.is_element_present('div[role="dialog"]') else "（无 dialog）"
+                print(f"🔍 弹窗内容: {dialog_html[:500]}")
+                for i, b in enumerate(sb.find_elements('div[role="dialog"] button')):
+                    try:
+                        print(f"🔍 弹窗按钮[{i}]: text={b.text!r} disabled={b.get_attribute('disabled')} class={b.get_attribute('class')}")
+                    except Exception as e:
+                        print(f"🔍 弹窗按钮[{i}] 读失败: {e}")
+            except Exception as e:
+                print(f"🔍 读弹窗失败: {e}")
 
             modal_button_clicked = False
             try:
-                selector = 'div[role="dialog"] button.btn-primary' 
+                selector = 'div[role="dialog"] button.btn-primary'
                 sb.click(selector, timeout=8)
                 modal_button_clicked = True
                 print("✅ 已点击续期按钮")
             except Exception as e:
                 print(f"续期按钮点击失败: {e}")
+
+            # 点完马上看弹窗还在不在、页面有什么变化
+            sb.sleep(2)
+            try:
+                after_text = sb.get_text('div[role="dialog"]') if sb.is_element_present('div[role="dialog"]') else "（弹窗已消失）"
+                print(f"🔍 点后弹窗: {after_text[:300]}")
+            except Exception as e:
+                print(f"🔍 点后读弹窗失败: {e}")
 
             # 续期是服务端异步操作，点完先等久一点，让服务端处理完
             # 再先读当前页（可能已通过 AJAX 更新），没变再刷新重读
