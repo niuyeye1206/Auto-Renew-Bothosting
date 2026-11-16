@@ -503,19 +503,26 @@ def main():
             except Exception as e:
                 print(f"续期按钮点击失败: {e}")
 
-            sb.sleep(5)
-            sb.refresh()
+            # 续期是服务端异步操作，点完先等久一点，让服务端处理完
+            # 再先读当前页（可能已通过 AJAX 更新），没变再刷新重读
+            sb.sleep(20)
             print("⏳ 等待新的过期时间...")
-            sb.wait_for_ready_state_complete()
-            sb.sleep(3)
-
-            # 提取新的到期日期和倒计时
             try:
                 new_page_text = sb.get_page_text() + "\n" + sb.get_page_source()
             except Exception:
                 new_page_text = sb.get_page_source()
             new_expiry = get_expiry_from_dom(sb) or extract_expiry_date(new_page_text)
             new_match = re.search(r"(?:Renewal cooldown|Renew in)\s+(\d{1,2}:\d{2}:\d{2})", new_page_text)
+            if not new_match and not (new_expiry and new_expiry != current_expiry):
+                sb.refresh()
+                sb.wait_for_ready_state_complete()
+                sb.sleep(5)
+                try:
+                    new_page_text = sb.get_page_text() + "\n" + sb.get_page_source()
+                except Exception:
+                    new_page_text = sb.get_page_source()
+                new_expiry = get_expiry_from_dom(sb) or extract_expiry_date(new_page_text)
+                new_match = re.search(r"(?:Renewal cooldown|Renew in)\s+(\d{1,2}:\d{2}:\d{2})", new_page_text)
             if new_match:
                 new_countdown = new_match.group(1)
                 print(f"✅ 续期成功！新的倒计时: {new_countdown}")
