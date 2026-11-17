@@ -214,7 +214,7 @@ def download_singbox():
         fail("sing-box 下载失败（3 次重试均失败）")
     try:
         with tarfile.open(tmp, "r:gz") as tf:
-            tf.extractall(".")
+            tf.extractall(".", filter="data")
     except Exception as e:
         fail(f"sing-box 解压失败: {e}")
     os.rename(f"sing-box-{SINGBOX_VERSION}-linux-amd64/sing-box", BIN_PATH)
